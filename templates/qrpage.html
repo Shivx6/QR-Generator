@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure QR Login</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        width: 80%;
+        height: 100vh;
+        margin: auto;
+        display: grid;
+        place-items: center;
+    }
+
+    h1 {
+        font-family: sans-serif;
+    }
+
+     input {
+        padding: 10px;
+        border-radius: 20px;
+        border: 2px solid steelblue;
+        font-size: 1.5rem;
+        letter-spacing: 2px;
+        outline: none;
+    } 
+</style>
+
+<body>
+    <h1>QR Code Generator</h1>
+    <input type="hidden" spellcheck="false" id="text" value="https://google.com" />
+    <div id="qrcode"></div>
+    <div>
+        <h3>Status: <span id="status">generated</span></h3>
+    </div>
+</body>
+
+<script>
+    const qrcode = document.getElementById("qrcode");
+    const statusEle = document.getElementById("status");
+
+    fetch('/getToken').then(resp => {
+        resp.json().then(respJson => {
+            console.log(respJson);
+            createQR(respJson.uuid);
+            window.interval = setInterval(updateStatus, 2000, respJson.uuid);
+        })
+    })
+    const qr = new QRCode(qrcode);
+
+    function createQR(uuid) {
+        let link = location.protocol + '//' + location.host + '/login?code=' + uuid;
+        qr.makeCode(link);
+    }
+
+    function updateStatus(uuid) {
+        fetch('/getStatus?' + new URLSearchParams({
+            code: uuid
+        })).then(resp => {
+            resp.json().then( respJson => {
+                let status = respJson.status;
+                statusEle.innerHTML = status;
+                if(status === 'loggedin'){
+                    clearInterval(window.interval);
+                }
+            })
+        })
+    }
+
+</script>
+
+</html>
